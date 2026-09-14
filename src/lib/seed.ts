@@ -100,7 +100,7 @@ export function createSeed(): StoreData {
       currentStreak: 0,
       online: true,
     }),
-    makeUser(1, "dfyz", 0, "toxa4912@gmail.com", "Dfyz#2026", "user", {
+    makeUser(1, "dfyz", 0, "toxa4912@gmail.com", "Dfyz#2026", "admin", {
       achievements: ["founder", "first_blood"],
       verified: true,
       online: true,
