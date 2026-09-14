@@ -223,10 +223,15 @@ export default function PlayerPage() {
                     if (!file) return;
                     setUploading("Анимация рамки загружается...");
                     try {
-                      const blob = await upload(`profiles/${user.id}/rank-frame`, file, {
-                        access: "public",
-                        handleUploadUrl: "/api/profile/upload-token",
-                      });
+                      const blob = await Promise.race([
+                        upload(`profiles/${user.id}/rank-frame`, file, {
+                          access: "public",
+                          handleUploadUrl: "/api/profile/upload-token",
+                        }),
+                        new Promise<never>((_, reject) => {
+                          window.setTimeout(() => reject(new Error("Загрузка слишком долго выполняется. Попробуй файл до 20 MB.")), 180_000);
+                        }),
+                      ]);
                       const mediaUrl = `${blob.url}?mediaType=${encodeURIComponent(file.type)}`;
                       const response = await fetch("/api/profile", {
                         method: "PATCH",
