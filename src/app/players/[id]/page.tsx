@@ -16,6 +16,7 @@ function isVideoFrame(url?: string) {
   return Boolean(
     url &&
       (url.startsWith("data:video/") ||
+        url.includes(".public.blob.vercel-storage.com/") ||
         /[?&]mediaType=video%2F(?:mp4|webm|quicktime|ogg)(?:&|$)/i.test(url) ||
         /\.(mp4|webm|mov|ogv)(?:$|[?#])/i.test(url)),
   );
