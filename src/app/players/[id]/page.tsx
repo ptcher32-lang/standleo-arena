@@ -206,7 +206,7 @@ export default function PlayerPage() {
               </label>
               <label className="avatar-upload-button btn-ghost mt-2 block cursor-pointer text-center text-xs">
                 <span>Загрузить анимацию рамки</span>
-                <span className="mt-1 block text-[10px] text-purple-200/70">GIF, WebP, MP4, MOV или WebM до 50 MB</span>
+                <span className="mt-1 block text-[10px] text-purple-200/70">GIF, WebP, MP4, MOV или WebM до 4 MB</span>
                 <input
                   className="hidden"
                   type="file"

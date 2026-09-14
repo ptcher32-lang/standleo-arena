@@ -9,7 +9,7 @@ import { updateStore } from "@/lib/db";
 import { profilePatchSchema } from "@/lib/validation";
 import { rateLimit } from "@/lib/rateLimit";
 
-const MAX_ANIMATED_FRAME_BYTES = 50 * 1024 * 1024;
+const MAX_ANIMATED_FRAME_BYTES = 4 * 1024 * 1024;
 
 function fileExtension(type: string): string {
   return ({
@@ -46,7 +46,7 @@ export async function PATCH(request: NextRequest) {
       if (frame instanceof File) {
         const allowedFrameTypes = new Set(["image/gif", "image/webp", "video/mp4", "video/webm", "video/quicktime", "video/ogg"]);
         if (!allowedFrameTypes.has(frame.type)) return error("Use GIF, WebP, MP4, MOV or WebM for the frame", 422);
-        if (frame.size > MAX_ANIMATED_FRAME_BYTES) return error("Animated frame must be 50 MB or smaller", 422);
+        if (frame.size > MAX_ANIMATED_FRAME_BYTES) return error("Animated frame must be 4 MB or smaller on the public site", 422);
       }
       if (file !== null && !(file instanceof File)) return error("Avatar file is required", 400);
       if (sticker !== null && !(sticker instanceof File)) return error("Sticker file is required", 400);
