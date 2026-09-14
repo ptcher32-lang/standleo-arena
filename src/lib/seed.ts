@@ -90,7 +90,7 @@ export function createSeed(): StoreData {
   ];
 
   const users: User[] = [
-    makeUser(0, "eosinginfo", 0, "admin@standleo.local", "Admin#2026", "admin", {
+    makeUser(0, "eosinginfo", 0, "ptcher32@gmail.com", "Admin#2026", "admin", {
       achievements: ["founder", "first_blood", "ten_wins", "rank_climber", "hot_streak"],
       wins: 0,
       losses: 0,
