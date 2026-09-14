@@ -52,6 +52,14 @@ function normalizeStore(store: StoreData): StoreData {
       ...(secondAdmin.profileBadges ?? []),
     ]));
   }
+  const tester = store.users.find((user) => user.nick.toLowerCase() === "0,7 kd i talent?");
+  if (tester) {
+    tester.verified = true;
+    tester.profileBadges = Array.from(new Set([
+      "TESTER",
+      ...(tester.profileBadges ?? []),
+    ]));
+  }
   return store;
 }
 

@@ -304,7 +304,9 @@ export default function PlayerPage() {
                   <strong>Подтверждённый аккаунт</strong>
                 </div>
                 <p>Этот профиль подтверждён администрацией STANDLEO.</p>
-                <span className="verification-role">Разработчик сайта</span>
+                <span className="verification-role">
+                  {(player.profileBadges ?? []).includes("TESTER") ? "Тестер сайта и платформы" : "Разработчик сайта"}
+                </span>
               </div>
             ) : null}
             <RankBadge mmr={player.mmr} />
