@@ -13,7 +13,12 @@ import { getRankByMmr } from "@/lib/ranks";
 import { upload } from "@vercel/blob/client";
 
 function isVideoFrame(url?: string) {
-  return Boolean(url && (url.startsWith("data:video/") || /\.(mp4|webm|mov|ogv)(?:$|[?#])/i.test(url)));
+  return Boolean(
+    url &&
+      (url.startsWith("data:video/") ||
+        /[?&]mediaType=video%2F(?:mp4|webm|quicktime|ogg)(?:&|$)/i.test(url) ||
+        /\.(mp4|webm|mov|ogv)(?:$|[?#])/i.test(url)),
+  );
 }
 
 type Player = {
@@ -221,11 +226,12 @@ export default function PlayerPage() {
                         access: "public",
                         handleUploadUrl: "/api/profile/upload-token",
                       });
+                      const mediaUrl = `${blob.url}?mediaType=${encodeURIComponent(file.type)}`;
                       const response = await fetch("/api/profile", {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
                         credentials: "same-origin",
-                        body: JSON.stringify({ rankFrameUrl: blob.url }),
+                        body: JSON.stringify({ rankFrameUrl: mediaUrl }),
                       });
                       const data = await response.json().catch(() => ({}));
                       setUploading(response.ok ? "Анимация рамки сохранена" : data.error ?? "Не удалось сохранить рамку");
