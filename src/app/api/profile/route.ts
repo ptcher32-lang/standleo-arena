@@ -62,6 +62,10 @@ export async function PATCH(request: NextRequest) {
         return error("Avatar frame must be PNG, WebP or GIF up to 2 MB", 422);
       }
       const saveUpload = async (upload: File, label: string) => {
+        if (process.env.DATABASE_URL) {
+          const bytes = Buffer.from(await upload.arrayBuffer());
+          return `data:${upload.type};base64,${bytes.toString("base64")}`;
+        }
         const uploadDir = path.join(process.cwd(), "public", "uploads", "profiles");
         await mkdir(uploadDir, { recursive: true });
         const filename = `${user.id}-${label}-${randomToken(8)}.${fileExtension(upload.type)}`;
