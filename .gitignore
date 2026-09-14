@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+data/store.json
+data/store.json.*
+.env*.local
+*.log
+*.tsbuildinfo
+.DS_Store
+
+certificates

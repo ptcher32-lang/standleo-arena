@@ -1,0 +1,24 @@
+{
+  "matchId": "m_400b7c5d18",
+  "winner": "A",
+  "scoreA": 8,
+  "scoreB": 0,
+  "players": [
+    {
+      "userId": "u_000",
+      "kills": 8,
+      "deaths": 0,
+      "assists": 0,
+      "ping": 65,
+      "money": 10000
+    },
+    {
+      "userId": "u_9c111a92",
+      "kills": 0,
+      "deaths": 8,
+      "assists": 0,
+      "ping": 58,
+      "money": 0
+    }
+  ]
+}
