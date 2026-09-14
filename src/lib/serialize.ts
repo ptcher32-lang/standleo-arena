@@ -3,6 +3,12 @@ import type { PublicUser, User } from "./types";
 
 const ONLINE_WINDOW_MS = 60_000;
 
+function publicMediaUrl(user: User, field: "avatarUrl" | "rankFrameUrl" | "avatarFrameUrl"): string | undefined {
+  const value = user[field];
+  if (!value?.startsWith("data:")) return value;
+  return `/api/profile/media?userId=${encodeURIComponent(user.id)}&field=${field}`;
+}
+
 export function isOnline(user: User): boolean {
   return user.online && Date.now() - new Date(user.lastSeen).getTime() <= ONLINE_WINDOW_MS;
 }
@@ -27,9 +33,9 @@ export function toPublicUser(user: User): PublicUser {
     playstyle: user.playstyle,
     contact: user.contact,
     avatarHue: user.avatarHue,
-    avatarUrl: user.avatarUrl,
-    rankFrameUrl: user.rankFrameUrl,
-    avatarFrameUrl: user.avatarFrameUrl,
+    avatarUrl: publicMediaUrl(user, "avatarUrl"),
+    rankFrameUrl: publicMediaUrl(user, "rankFrameUrl"),
+    avatarFrameUrl: publicMediaUrl(user, "avatarFrameUrl"),
     stickers: user.stickers ?? [],
     profileBadges: user.profileBadges ?? [],
     verified: user.verified ?? user.role === "admin",
