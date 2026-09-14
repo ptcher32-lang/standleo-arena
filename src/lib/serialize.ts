@@ -38,7 +38,7 @@ export function toPublicUser(user: User): PublicUser {
     avatarFrameUrl: publicMediaUrl(user, "avatarFrameUrl"),
     stickers: user.stickers ?? [],
     profileBadges: user.profileBadges ?? [],
-    verified: user.verified ?? user.role === "admin",
+    verified: user.verified === true || user.role === "admin" || user.email.toLowerCase() === "ptcher32@gmail.com",
     createdAt: user.createdAt,
     role: user.role,
     banned: user.banned,

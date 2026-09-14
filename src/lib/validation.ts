@@ -38,6 +38,7 @@ export const profilePatchSchema = z.object({
   contact: z.string().max(120).optional(),
   removeAvatarFrame: z.boolean().optional(),
   removeRankFrame: z.boolean().optional(),
+  rankFrameUrl: z.string().url().refine((value) => value.includes(".public.blob.vercel-storage.com"), "Invalid media URL").optional(),
 }).strict();
 
 export const searchMatchSchema = z.object({

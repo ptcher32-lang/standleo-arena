@@ -10,6 +10,7 @@ import { MmrChart } from "@/components/MmrChart";
 import { ACHIEVEMENT_LABELS } from "@/lib/mmr";
 import { useAuth } from "@/components/AuthProvider";
 import { getRankByMmr } from "@/lib/ranks";
+import { upload } from "@vercel/blob/client";
 
 function isVideoFrame(url?: string) {
   return Boolean(url && (url.startsWith("data:video/") || /\.(mp4|webm|mov|ogv)(?:$|[?#])/i.test(url)));
@@ -206,7 +207,7 @@ export default function PlayerPage() {
               </label>
               <label className="avatar-upload-button btn-ghost mt-2 block cursor-pointer text-center text-xs">
                 <span>Загрузить анимацию рамки</span>
-                <span className="mt-1 block text-[10px] text-purple-200/70">GIF, WebP, MP4, MOV или WebM до 4 MB</span>
+                <span className="mt-1 block text-[10px] text-purple-200/70">GIF, WebP, MP4, MOV или WebM до 50 MB</span>
                 <input
                   className="hidden"
                   type="file"
@@ -215,12 +216,23 @@ export default function PlayerPage() {
                     const file = event.target.files?.[0];
                     if (!file) return;
                     setUploading("Анимация рамки загружается...");
-                    const form = new FormData();
-                    form.append("rankFrame", file);
-                    const response = await fetch("/api/profile", { method: "PATCH", body: form, credentials: "same-origin" });
-                    const data = await response.json();
-                    setUploading(response.ok ? "Анимация рамки сохранена" : data.error ?? "Не удалось загрузить рамку");
-                    if (response.ok) updatePlayer(data.user);
+                    try {
+                      const blob = await upload(`profiles/${user.id}/rank-frame`, file, {
+                        access: "public",
+                        handleUploadUrl: "/api/profile/upload-token",
+                      });
+                      const response = await fetch("/api/profile", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "same-origin",
+                        body: JSON.stringify({ rankFrameUrl: blob.url }),
+                      });
+                      const data = await response.json().catch(() => ({}));
+                      setUploading(response.ok ? "Анимация рамки сохранена" : data.error ?? "Не удалось сохранить рамку");
+                      if (response.ok) updatePlayer(data.user);
+                    } catch (error) {
+                      setUploading(error instanceof Error ? error.message : "Не удалось загрузить рамку");
+                    }
                   }}
                 />
               </label>

@@ -103,6 +103,7 @@ export async function PATCH(request: NextRequest) {
       if (body.contact !== undefined) current.contact = body.contact.trim();
       if (body.removeAvatarFrame) current.avatarFrameUrl = undefined;
       if (body.removeRankFrame) current.rankFrameUrl = undefined;
+      if (body.rankFrameUrl) current.rankFrameUrl = body.rankFrameUrl;
       return current;
     });
     return json({ user: { ...toPublicUser(updated), email: updated.email } });
