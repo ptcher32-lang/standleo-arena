@@ -1,5 +1,6 @@
 import { mkdir, readdir, readFile, rename, stat, writeFile } from "fs/promises";
 import path from "path";
+import { Pool } from "@neondatabase/serverless";
 import { createSeed } from "./seed";
 import type { StoreData } from "./types";
 import { randomToken } from "./crypto";
@@ -10,6 +11,26 @@ const STORE_PATH = path.join(DATA_DIR, "store.json");
 let cache: StoreData | null = null;
 let writeChain: Promise<void> = Promise.resolve();
 let initialization: Promise<StoreData> | null = null;
+let pool: Pool | null = null;
+
+const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_TABLE = "standleo_store";
+
+function useDatabase(): boolean {
+  return Boolean(DATABASE_URL);
+}
+
+function databasePool(): Pool {
+  if (!DATABASE_URL) throw new Error("DATABASE_URL is not configured");
+  pool ??= new Pool({ connectionString: DATABASE_URL });
+  return pool;
+}
+
+function normalizeStore(store: StoreData): StoreData {
+  store.deviceBans ??= [];
+  store.sessions ??= [];
+  return store;
+}
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -217,11 +238,38 @@ async function ensureStore(): Promise<StoreData> {
   if (cache) return cache;
   if (initialization) return initialization;
   initialization = (async () => {
+    if (useDatabase()) {
+      const db = databasePool();
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS ${DATABASE_TABLE} (
+          id integer PRIMARY KEY CHECK (id = 1),
+          data jsonb NOT NULL,
+          updated_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+      const existing = await db.query<{ data: StoreData }>(
+        `SELECT data FROM ${DATABASE_TABLE} WHERE id = 1`,
+      );
+      if (existing.rows[0]) {
+        cache = normalizeStore(existing.rows[0].data);
+        return cache;
+      }
+      cache = removeSeedActivity(createSeed());
+      await db.query(
+        `INSERT INTO ${DATABASE_TABLE} (id, data) VALUES (1, $1::jsonb) ON CONFLICT (id) DO NOTHING`,
+        [JSON.stringify(cache)],
+      );
+      // Another process may have initialized the row while this process was
+      // creating the schema, so always read the committed value back.
+      const initialized = await db.query<{ data: StoreData }>(
+        `SELECT data FROM ${DATABASE_TABLE} WHERE id = 1`,
+      );
+      cache = normalizeStore(initialized.rows[0]?.data ?? cache);
+      return cache;
+    }
     try {
       const raw = await readFile(STORE_PATH, "utf8");
-      cache = JSON.parse(raw.replace(/^\uFEFF/, "")) as StoreData;
-      cache.deviceBans ??= [];
-      cache.sessions ??= [];
+      cache = normalizeStore(JSON.parse(raw.replace(/^\uFEFF/, "")) as StoreData);
       await externalizeProfileMedia(cache);
       await restoreMissingProfileMedia(cache);
       const migrated = removeExtraLiveMatch(removeSeedActivity(cache));
@@ -250,16 +298,53 @@ export async function readStore(): Promise<StoreData> {
 }
 
 export async function reloadStore(): Promise<StoreData> {
+  if (useDatabase()) {
+    await ensureStore();
+    const result = await databasePool().query<{ data: StoreData }>(
+      `SELECT data FROM ${DATABASE_TABLE} WHERE id = 1`,
+    );
+    if (!result.rows[0]) return ensureStore();
+    cache = normalizeStore(result.rows[0].data);
+    return cache;
+  }
   const raw = await readFile(STORE_PATH, "utf8");
-  const store = JSON.parse(raw.replace(/^\uFEFF/, "")) as StoreData;
-  store.deviceBans ??= [];
-  store.sessions ??= [];
+  const store = normalizeStore(JSON.parse(raw.replace(/^\uFEFF/, "")) as StoreData);
   cache = store;
   return store;
 }
 
 export async function updateStore<T>(mutator: (store: StoreData) => T | Promise<T>): Promise<T> {
   const run = async () => {
+    if (useDatabase()) {
+      await ensureStore();
+      const client = await databasePool().connect();
+      try {
+        await client.query("BEGIN");
+        // Serialize writers across application instances, not just within
+        // this process. The row lock also protects the read/modify/write.
+        await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+          DATABASE_TABLE,
+        ]);
+        const result = await client.query<{ data: StoreData }>(
+          `SELECT data FROM ${DATABASE_TABLE} WHERE id = 1 FOR UPDATE`,
+        );
+        const store = normalizeStore(result.rows[0]?.data ?? removeSeedActivity(createSeed()));
+        const value = await mutator(store);
+        await client.query(
+          `INSERT INTO ${DATABASE_TABLE} (id, data) VALUES (1, $1::jsonb)
+           ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
+          [JSON.stringify(store)],
+        );
+        await client.query("COMMIT");
+        cache = store;
+        return value;
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
+    }
     const store = await ensureStore();
     const result = await mutator(store);
     cache = store;
