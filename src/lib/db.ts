@@ -137,6 +137,8 @@ function removeSeedActivity(store: StoreData): StoreData {
 }
 
 function removeExtraLiveMatch(store: StoreData): StoreData {
+  return store;
+  /*
   const matches = store.matches.length === 2 && store.matches.some((match) => match.status === "live")
     ? store.matches.filter((match) => match.status === "live")
     : store.matches;
@@ -208,6 +210,7 @@ function removeExtraLiveMatch(store: StoreData): StoreData {
     ...store,
     matches,
   };
+  */
 }
 
 async function ensureStore(): Promise<StoreData> {

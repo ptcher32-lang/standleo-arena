@@ -100,60 +100,13 @@ export function createSeed(): StoreData {
       currentStreak: 0,
       online: true,
     }),
-    makeUser(1, "ApexPilot", 1200, "player@standleo.local", "Player#2026", "user", {
-      achievements: ["founder", "first_blood", "ten_wins"],
+    makeUser(1, "dfyz", 0, "toxa4912@gmail.com", "Dfyz#2026", "admin", {
+      achievements: ["founder", "first_blood"],
+      verified: true,
       online: true,
     }),
   ];
-
-  NICKS.forEach((nick, i) => {
-    const idx = i + 2;
-    users.push(makeUser(idx, nick, mmrs[i % mmrs.length], `${nick.toLowerCase()}@arena.local`, "Player#2026"));
-  });
-
-  const modes: MatchMode[] = ["1v1", "2v2", "3v3", "5v5"];
   const matches: Match[] = [];
-
-  for (let i = 0; i < 28; i++) {
-    const mode = modes[i % modes.length];
-    const size = Number(mode[0]);
-    const offset = (i * 3) % (users.length - size * 2);
-    const teamAUsers = users.slice(offset, offset + size);
-    const teamBUsers = users.slice(offset + size, offset + size * 2);
-    if (teamAUsers.length < size || teamBUsers.length < size) continue;
-
-    const avgA = teamAUsers.reduce((s, u) => s + u.mmr, 0) / size;
-    const avgB = teamBUsers.reduce((s, u) => s + u.mmr, 0) / size;
-    const aWins = i % 3 !== 0;
-    const scoreA = aWins ? 16 : 11 + (i % 4);
-    const scoreB = aWins ? 9 + (i % 5) : 16;
-
-    const teamA = teamAUsers.map((u, pi) =>
-      slot(u, 12 + ((i + pi) % 10), 8 + ((i + pi) % 7), 3 + (pi % 5), calcMmrDelta(u.mmr, avgB, aWins)),
-    );
-    const teamB = teamBUsers.map((u, pi) =>
-      slot(u, 11 + ((i + pi) % 9), 9 + ((i + pi) % 6), 2 + (pi % 4), calcMmrDelta(u.mmr, avgA, !aWins)),
-    );
-
-    const pool = [...teamA, ...teamB];
-    const mvp = pool.reduce((best, p) => (p.kills - p.deaths > best.kills - best.deaths ? p : best));
-
-    matches.push({
-      id: `m_${(i + 1).toString().padStart(3, "0")}`,
-      mode,
-      platform: "pc",
-      status: "completed",
-      createdAt: isoDaysAgo(20 - Math.floor(i / 2), i),
-      startedAt: isoDaysAgo(20 - Math.floor(i / 2), i),
-      endedAt: isoDaysAgo(20 - Math.floor(i / 2), i - 1),
-      teamA,
-      teamB,
-      scoreA,
-      scoreB,
-      winner: aWins ? "A" : "B",
-      mvpId: mvp.userId,
-    });
-  }
 
   const news: NewsArticle[] = [
     {
@@ -192,8 +145,7 @@ export function createSeed(): StoreData {
     {
       id: "r_001",
       reporterId: users[1].id,
-      targetId: users[8].id,
-      matchId: matches[0]?.id,
+      targetId: users[1].id,
       reason: "Toxic chat after pistol round",
       status: "open",
       createdAt: isoDaysAgo(1, 3),
@@ -207,15 +159,14 @@ export function createSeed(): StoreData {
     friendRequests: [
       {
         id: "fr_001",
-        fromId: users[4].id,
-        toId: users[1].id,
+        fromId: users[1].id,
+        toId: users[0].id,
         status: "pending",
         createdAt: isoDaysAgo(0, 2),
       },
     ],
     friendships: [
       { a: users[0].id, b: users[1].id, since: isoDaysAgo(30) },
-      { a: users[1].id, b: users[3].id, since: isoDaysAgo(12) },
     ],
     notifications: [
       {
