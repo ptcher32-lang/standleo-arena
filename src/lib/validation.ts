@@ -6,8 +6,9 @@ export const registerSchema = z.object({
   nick: z
     .string()
     .min(3)
-    .max(16)
-    .regex(/^[a-zA-Z0-9_]+$/, "Nick may contain letters, numbers and underscore"),
+    .max(24)
+    .trim()
+    .refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Nick contains invalid characters"),
 });
 
 export const loginSchema = z.object({
@@ -28,8 +29,9 @@ export const profilePatchSchema = z.object({
   nick: z
     .string()
     .min(3)
-    .max(16)
-    .regex(/^[a-zA-Z0-9_]+$/)
+    .max(24)
+    .trim()
+    .refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Nick contains invalid characters")
     .optional(),
   bio: z.string().max(280).optional(),
   playstyle: z.string().max(40).optional(),
