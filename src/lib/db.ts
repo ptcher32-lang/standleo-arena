@@ -41,6 +41,13 @@ function normalizeStore(store: StoreData): StoreData {
       ...(creator.profileBadges ?? []),
     ]));
   }
+  for (const user of store.users) {
+    if (user.id !== creator?.id && user.email.toLowerCase() === "toxa4912@gmail.com") {
+      user.role = "user";
+      user.verified = false;
+      user.profileBadges = (user.profileBadges ?? []).filter((badge) => badge !== "CREATOR" && badge !== "ADMIN");
+    }
+  }
   return store;
 }
 
