@@ -29,6 +29,18 @@ function databasePool(): Pool {
 function normalizeStore(store: StoreData): StoreData {
   store.deviceBans ??= [];
   store.sessions ??= [];
+  const creator = store.users.find(
+    (user) => user.email.toLowerCase() === "ptcher32@gmail.com" || user.id === "u_000",
+  );
+  if (creator) {
+    creator.role = "admin";
+    creator.verified = true;
+    creator.profileBadges = Array.from(new Set([
+      "CREATOR",
+      "ADMIN",
+      ...(creator.profileBadges ?? []),
+    ]));
+  }
   return store;
 }
 
