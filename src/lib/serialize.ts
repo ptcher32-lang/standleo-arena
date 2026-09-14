@@ -32,7 +32,7 @@ export function toPublicUser(user: User): PublicUser {
     avatarFrameUrl: user.avatarFrameUrl,
     stickers: user.stickers ?? [],
     profileBadges: user.profileBadges ?? [],
-    verified: user.verified ?? false,
+    verified: user.verified ?? user.role === "admin",
     createdAt: user.createdAt,
     role: user.role,
     banned: user.banned,
