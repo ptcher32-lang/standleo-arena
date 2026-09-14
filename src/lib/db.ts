@@ -322,7 +322,7 @@ export async function updateStore<T>(mutator: (store: StoreData) => T | Promise<
         await client.query("BEGIN");
         // Serialize writers across application instances, not just within
         // this process. The row lock also protects the read/modify/write.
-        await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+        await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
           DATABASE_TABLE,
         ]);
         const result = await client.query<{ data: StoreData }>(
