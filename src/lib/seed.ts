@@ -174,7 +174,7 @@ export function createSeed(): StoreData {
         userId: users[1].id,
         type: "friend_request",
         title: "Friend request",
-        body: `${users[4].nick} wants to add you`,
+        body: `${users[0].nick} wants to add you`,
         read: false,
         createdAt: isoDaysAgo(0, 2),
         href: "/friends",
