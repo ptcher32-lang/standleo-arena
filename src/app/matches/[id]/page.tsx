@@ -160,24 +160,36 @@ export default function MatchPage() {
           </label>
           {match.proofUrl ? <p className="mt-3 text-sm text-accent">Скриншот уже загружен.</p> : null}
           {match.status === "live" && match.proofUrl ? (
-            <button
-              type="button"
-              className="btn-primary mt-3 text-sm"
-              onClick={async () => {
-                setProofMessage("Подтверждаем победу...");
-                const response = await fetch(`/api/matches/${match.id}`, {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  credentials: "same-origin",
-                  body: JSON.stringify({ action: "manual_confirm" }),
-                });
-                const data = await response.json().catch(() => ({}));
-                setProofMessage(response.ok ? "Готово: победа подтверждена вручную" : data.error ?? "Не удалось подтвердить победу");
-                if (response.ok) setMatch(data.match);
-              }}
-            >
-              Подтвердить победу вручную
-            </button>
+            <div className="mt-3">
+              <p className="text-sm text-white/70">Выбери победителя на загруженном скриншоте:</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {[...match.teamA, ...match.teamB].map((slot) => {
+                  const player = users[slot.userId];
+                  return (
+                    <button
+                      key={slot.userId}
+                      type="button"
+                      className="btn-primary text-sm"
+                      onClick={async () => {
+                        if (!window.confirm(`Подтвердить победу игрока ${player?.nick ?? "Игрок"} со счётом 8:0?`)) return;
+                        setProofMessage("Проверяем участника и пересчитываем MMR...");
+                        const response = await fetch(`/api/matches/${match.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          credentials: "same-origin",
+                          body: JSON.stringify({ action: "manual_confirm", winnerId: slot.userId }),
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        setProofMessage(response.ok ? "Готово: победа подтверждена, MMR пересчитан для обоих игроков" : data.error ?? "Не удалось подтвердить победу");
+                        if (response.ok) setMatch(data.match);
+                      }}
+                    >
+                      Победил {player?.nick ?? "Игрок"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ) : null}
           {proofMessage ? <p className="mt-3 text-sm text-white/70">{proofMessage}</p> : null}
         </section>

@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   try {
     const user = await requireUser();
     if (request.headers.get("content-type")?.includes("application/json")) {
-      const body = await request.json() as { action?: string };
+      const body = await request.json() as { action?: string; winnerId?: string };
       if (body.action !== "manual_confirm") return error("Unknown match action", 400);
       const current = await readStore();
       const match = current.matches.find((item) => item.id === id);
@@ -39,11 +39,16 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         : match.teamB.some((slot) => slot.userId === user.id) ? "B" : null;
       if (!side) return error("Forbidden", 403);
       if (!match.proofUrl) return error("Сначала загрузите скрин результата", 422);
+      const winnerId = body.winnerId;
+      if (!winnerId || ![...match.teamA, ...match.teamB].some((slot) => slot.userId === winnerId)) {
+        return error("Выберите победителя из участников матча", 422);
+      }
+      const winnerSide = match.teamA.some((slot) => slot.userId === winnerId) ? "A" : "B";
       const completed = await updatePlayerStats(
         id,
-        user.id,
-        side === "A" ? 8 : 0,
-        side === "B" ? 8 : 0,
+        winnerId,
+        winnerSide === "A" ? 8 : 0,
+        winnerSide === "B" ? 8 : 0,
         true,
       );
       return json({ match: completed });
