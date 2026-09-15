@@ -38,10 +38,20 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     if (!currentMatch) return error("Матч не найден", 404);
     const participant = [...currentMatch.teamA, ...currentMatch.teamB].some((slot) => slot.userId === user.id);
     if (!participant) return error("Forbidden", 403);
+    const legacyNickAliases: Record<string, string[]> = {
+      u_001: ["39393"],
+    };
+    const nickForSlot = (slot: { userId: string }) => {
+      const matchedUser = current.users.find((item) => item.id === slot.userId);
+      return [
+        matchedUser?.nick ?? "",
+        ...(legacyNickAliases[slot.userId] ?? []),
+      ];
+    };
     const detected = await Promise.race([
       recognizeMatchScore(image, {
-      A: currentMatch.teamA.map((slot) => current.users.find((item) => item.id === slot.userId)?.nick ?? ""),
-      B: currentMatch.teamB.map((slot) => current.users.find((item) => item.id === slot.userId)?.nick ?? ""),
+      A: currentMatch.teamA.flatMap(nickForSlot),
+      B: currentMatch.teamB.flatMap(nickForSlot),
       }),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 30_000)),
     ]);
