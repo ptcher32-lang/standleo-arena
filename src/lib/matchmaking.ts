@@ -136,10 +136,25 @@ export async function cancelSearch(userId: string): Promise<void> {
   });
 }
 
-export async function finishMatch(matchId: string, winner: "A" | "B", scoreA: number, scoreB: number, proofAttached = false): Promise<Match | null> {
+export async function updatePlayerStats(
+  matchId: string,
+  winnerId: string,
+  scoreA: number,
+  scoreB: number,
+  proofAttached = false,
+): Promise<Match | null> {
   return updateStore((store) => {
     const match = store.matches.find((m) => m.id === matchId);
     if (!match || match.status === "completed") return match ?? null;
+    const winner =
+      winnerId === "A" || winnerId === "B"
+        ? winnerId
+        : match.teamA.some((slot) => slot.userId === winnerId)
+          ? "A"
+          : match.teamB.some((slot) => slot.userId === winnerId)
+            ? "B"
+            : null;
+    if (!winner) throw new Error("WINNER_NOT_IN_MATCH");
 
     const now = new Date().toISOString();
     match.scoreA = scoreA;
@@ -220,6 +235,16 @@ export async function finishMatch(matchId: string, winner: "A" | "B", scoreA: nu
     });
     return match;
   });
+}
+
+export async function finishMatch(
+  matchId: string,
+  winner: "A" | "B",
+  scoreA: number,
+  scoreB: number,
+  proofAttached = false,
+): Promise<Match | null> {
+  return updatePlayerStats(matchId, winner, scoreA, scoreB, proofAttached);
 }
 
 export async function maybeAutoFinish(match: Match): Promise<Match> {

@@ -8,7 +8,7 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { randomToken } from "@/lib/crypto";
 import { recognizeMatchScore } from "@/lib/proof-ocr";
-import { finishMatch } from "@/lib/matchmaking";
+import { updatePlayerStats } from "@/lib/matchmaking";
 import { put } from "@vercel/blob";
 
 const MAX_PROOF_BYTES = 5 * 1024 * 1024;
@@ -39,9 +39,9 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         : match.teamB.some((slot) => slot.userId === user.id) ? "B" : null;
       if (!side) return error("Forbidden", 403);
       if (!match.proofUrl) return error("Сначала загрузите скрин результата", 422);
-      const completed = await finishMatch(
+      const completed = await updatePlayerStats(
         id,
-        side,
+        user.id,
         side === "A" ? 8 : 0,
         side === "B" ? 8 : 0,
         true,
@@ -111,7 +111,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       });
     })();
     const completed = uploaded.detectedWinner
-      ? await finishMatch(
+      ? await updatePlayerStats(
           id,
           uploaded.detectedWinner!,
           uploaded.detectedScoreA!,
@@ -122,6 +122,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     return json({ match: completed, needsManualConfirmation: !uploaded.detectedWinner });
   } catch (err) {
     if (err instanceof Error && err.message === "MATCH_NOT_FOUND") return error("Матч не найден", 404);
+    if (err instanceof Error && err.message === "WINNER_NOT_IN_MATCH") return error("Победитель не является участником матча", 422);
     return handleError(err);
   }
 }
