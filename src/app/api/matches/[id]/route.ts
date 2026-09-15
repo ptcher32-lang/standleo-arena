@@ -28,6 +28,26 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   const { id } = await context.params;
   try {
     const user = await requireUser();
+    if (request.headers.get("content-type")?.includes("application/json")) {
+      const body = await request.json() as { action?: string };
+      if (body.action !== "manual_confirm") return error("Unknown match action", 400);
+      const current = await readStore();
+      const match = current.matches.find((item) => item.id === id);
+      if (!match) return error("Матч не найден", 404);
+      const side = match.teamA.some((slot) => slot.userId === user.id)
+        ? "A"
+        : match.teamB.some((slot) => slot.userId === user.id) ? "B" : null;
+      if (!side) return error("Forbidden", 403);
+      if (!match.proofUrl) return error("Сначала загрузите скрин результата", 422);
+      const completed = await finishMatch(
+        id,
+        side,
+        side === "A" ? 8 : 0,
+        side === "B" ? 8 : 0,
+        true,
+      );
+      return json({ match: completed });
+    }
     const form = await request.formData();
     const proof = form.get("proof");
     if (!(proof instanceof File) || !proof.type.startsWith("image/")) return error("Нужен файл изображения", 422);
@@ -48,13 +68,18 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         ...(legacyNickAliases[slot.userId] ?? []),
       ];
     };
-    const detected = await Promise.race([
-      recognizeMatchScore(image, {
-      A: currentMatch.teamA.flatMap(nickForSlot),
-      B: currentMatch.teamB.flatMap(nickForSlot),
-      }),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 30_000)),
-    ]);
+    let detected: Awaited<ReturnType<typeof recognizeMatchScore>> = null;
+    try {
+      detected = await Promise.race([
+        recognizeMatchScore(image, {
+          A: currentMatch.teamA.flatMap(nickForSlot),
+          B: currentMatch.teamB.flatMap(nickForSlot),
+        }),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 30_000)),
+      ]);
+    } catch (error) {
+      console.error("Match proof OCR failed", error);
+    }
     const uploaded = await (async () => {
       const { updateStore } = await import("@/lib/db");
       return updateStore(async (store) => {
@@ -94,7 +119,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
           true,
         )
       : uploaded;
-    return json({ match: completed });
+    return json({ match: completed, needsManualConfirmation: !uploaded.detectedWinner });
   } catch (err) {
     if (err instanceof Error && err.message === "MATCH_NOT_FOUND") return error("Матч не найден", 404);
     return handleError(err);

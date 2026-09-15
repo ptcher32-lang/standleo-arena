@@ -150,7 +150,7 @@ export default function MatchPage() {
                   form.append("proof", file);
                   const response = await fetch(`/api/matches/${match.id}`, { method: "PATCH", body: form, credentials: "same-origin" });
                   const data = await response.json().catch(() => ({}));
-                  setProofMessage(response.ok ? (data.match?.status === "completed" ? "Готово: матч завершён автоматически" : "Скриншот загружен, но ник победителя не распознан") : data.error ?? "Не удалось отправить скриншот");
+                  setProofMessage(response.ok ? (data.match?.status === "completed" ? "Готово: матч завершён автоматически" : "Скриншот загружен. Подтверди результат вручную.") : data.error ?? "Не удалось отправить скриншот");
                   if (response.ok) setMatch(data.match);
                 } catch {
                   setProofMessage("Ошибка соединения с сервером. Повтори загрузку скрина.");
@@ -159,6 +159,26 @@ export default function MatchPage() {
             />
           </label>
           {match.proofUrl ? <p className="mt-3 text-sm text-accent">Скриншот уже загружен.</p> : null}
+          {match.status === "live" && match.proofUrl ? (
+            <button
+              type="button"
+              className="btn-primary mt-3 text-sm"
+              onClick={async () => {
+                setProofMessage("Подтверждаем победу...");
+                const response = await fetch(`/api/matches/${match.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "same-origin",
+                  body: JSON.stringify({ action: "manual_confirm" }),
+                });
+                const data = await response.json().catch(() => ({}));
+                setProofMessage(response.ok ? "Готово: победа подтверждена вручную" : data.error ?? "Не удалось подтвердить победу");
+                if (response.ok) setMatch(data.match);
+              }}
+            >
+              Подтвердить победу вручную
+            </button>
+          ) : null}
           {proofMessage ? <p className="mt-3 text-sm text-white/70">{proofMessage}</p> : null}
         </section>
       ) : null}
