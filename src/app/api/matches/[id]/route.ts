@@ -9,6 +9,7 @@ import path from "path";
 import { randomToken } from "@/lib/crypto";
 import { recognizeMatchScore } from "@/lib/proof-ocr";
 import { finishMatch } from "@/lib/matchmaking";
+import { put } from "@vercel/blob";
 
 const MAX_PROOF_BYTES = 5 * 1024 * 1024;
 
@@ -49,12 +50,21 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       return updateStore(async (store) => {
         const match = store.matches.find((item) => item.id === id);
         if (!match) throw new Error("MATCH_NOT_FOUND");
-        const uploadDir = path.join(process.cwd(), "public", "uploads", "matches");
-        await mkdir(uploadDir, { recursive: true });
         const extension = proof.type.split("/")[1]?.replace(/[^a-z0-9]/gi, "") || "png";
         const filename = `${id}-${randomToken(8)}.${extension}`;
-        await writeFile(path.join(uploadDir, filename), image);
-        match.proofUrl = `/uploads/matches/${filename}`;
+        if (process.env.DATABASE_URL && process.env.BLOB_READ_WRITE_TOKEN) {
+          const blob = await put(`matches/${filename}`, image, {
+            access: "public",
+            contentType: proof.type,
+            addRandomSuffix: false,
+          });
+          match.proofUrl = blob.url;
+        } else {
+          const uploadDir = path.join(process.cwd(), "public", "uploads", "matches");
+          await mkdir(uploadDir, { recursive: true });
+          await writeFile(path.join(uploadDir, filename), image);
+          match.proofUrl = `/uploads/matches/${filename}`;
+        }
         match.proofAttached = false;
         if (detected) {
           match.detectedScoreA = detected.scoreA;
