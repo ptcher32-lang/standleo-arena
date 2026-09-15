@@ -57,10 +57,6 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         match.proofUrl = `/uploads/matches/${filename}`;
         match.proofAttached = false;
         if (detected) {
-          if (detected.winner === "B") {
-            [match.teamA, match.teamB] = [match.teamB, match.teamA];
-            detected.winner = "A";
-          }
           match.detectedScoreA = detected.scoreA;
           match.detectedScoreB = detected.scoreB;
           match.detectedWinner = detected.winner;
@@ -69,7 +65,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         return match;
       });
     })();
-    const completed = uploaded.detectedWinnerNick
+    const completed = uploaded.detectedWinner
       ? await finishMatch(
           id,
           uploaded.detectedWinner!,
